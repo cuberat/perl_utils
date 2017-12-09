@@ -63,6 +63,9 @@ our $VERSION = '0.01';
 
 =head1 METHODS
 
+=head2 new()
+
+Create a new object.
 
 =cut
 
@@ -72,11 +75,15 @@ sub new {
     return $self;
 }
 
-sub get_date_local_yesterday {
-    my ($self) = @_;
+=pod
 
-    return $self->get_date_local(time() - 86400);
-}
+=head2 get_time_local($epoch_secs)
+
+Return the local timestamp in YYYY-mm-ddTHH:MM:SS format.
+
+$epoc_secs defaults to now.
+
+=cut
 
 sub get_time_local {
     my ($self, $epoch_secs) = @_;
@@ -91,6 +98,16 @@ sub get_time_local {
     return $ts;
 }
 
+=pod
+
+=head2 get_date_local($epoch_secs)
+
+Return the local date in YYYY-mm-dd format.
+
+$epoc_secs defaults to now.
+
+=cut
+
 sub get_date_local {
     my ($self, $epoch_secs) = @_;
 
@@ -104,6 +121,28 @@ sub get_date_local {
 
 }
 
+=pod
+
+=head2 get_date_local_yesterday()
+
+Return the local date for yesterday in YYYY-mm-dd format.
+
+=cut
+
+sub get_date_local_yesterday {
+    my ($self) = @_;
+
+    return $self->get_date_local(time() - 86400);
+}
+
+=pod
+
+=head2 get_time_utc($epoch_secs)
+
+Return the UTC timestamp for $epoch_secs in YYYY-dd-mmTHH:MM::SS format.
+
+=cut
+
 sub get_time_utc {
     my ($self, $epoch_secs) = @_;
 
@@ -116,6 +155,14 @@ sub get_time_utc {
 
     return $ts;
 }
+
+=pod
+
+=head2 get_date_utc($epoch_secs)
+
+Return the UTC date for $epoch_secs in YYYY-dd-mm format.
+
+=cut
 
 sub get_date_utc {
     my ($self, $epoch_secs) = @_;
