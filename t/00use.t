@@ -7,5 +7,5 @@ use Test::More tests => 1;
 
 # main
 {
-    use Owenslib::Prog::Utils; ok(1);
+    use Owenslib::Prog::Utils 1.02; ok(1);
 }
