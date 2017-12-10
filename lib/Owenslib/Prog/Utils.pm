@@ -45,7 +45,7 @@ Owenslib::Prog::Utils - General programming utilities.
 
 =head1 VERSION
 
-0.01
+1.02
 
 =cut
 
@@ -56,7 +56,7 @@ package Owenslib::Prog::Utils;
 
 use Getopt::Long qw(:config no_ignore_case bundling);
 
-our $VERSION = '0.01';
+our $VERSION = '1.02';
 
 
 =pod
@@ -77,7 +77,9 @@ sub new {
 
 =pod
 
-=head2 get_time_local($epoch_secs)
+=head2 Timestamps
+
+=head3 get_time_local($epoch_secs)
 
 Return the local timestamp in YYYY-mm-ddTHH:MM:SS format.
 
@@ -88,11 +90,13 @@ $epoc_secs defaults to now.
 sub get_time_local {
     my ($self, $epoch_secs) = @_;
 
+    $epoch_secs = time() unless defined $epoch_secs;
+
     my ($sec,$min,$hour,$mday,$mon,$year) = localtime($epoch_secs);
     $year += 1900 if $year < 1900;
     $mon++;
 
-    my $ts = sprintf "%04d-%02d-%02dT%02d:%02d:%02d", $year, $mon,
+    my $ts = sprintf "%04d-%02d-%02d %02d:%02d:%02d", $year, $mon,
         $mday, $hour, $min, $sec;
 
     return $ts;
@@ -100,7 +104,7 @@ sub get_time_local {
 
 =pod
 
-=head2 get_date_local($epoch_secs)
+=head3 get_date_local($epoch_secs)
 
 Return the local date in YYYY-mm-dd format.
 
@@ -110,6 +114,8 @@ $epoc_secs defaults to now.
 
 sub get_date_local {
     my ($self, $epoch_secs) = @_;
+
+    $epoch_secs = time() unless defined $epoch_secs;
 
     my ($sec,$min,$hour,$mday,$mon,$year) = localtime($epoch_secs);
     $year += 1900 if $year < 1900;
@@ -123,7 +129,7 @@ sub get_date_local {
 
 =pod
 
-=head2 get_date_local_yesterday()
+=head3 get_date_local_yesterday()
 
 Return the local date for yesterday in YYYY-mm-dd format.
 
@@ -137,7 +143,7 @@ sub get_date_local_yesterday {
 
 =pod
 
-=head2 get_time_utc($epoch_secs)
+=head3 get_time_utc($epoch_secs)
 
 Return the UTC timestamp for $epoch_secs in YYYY-dd-mmTHH:MM::SS format.
 
@@ -146,11 +152,13 @@ Return the UTC timestamp for $epoch_secs in YYYY-dd-mmTHH:MM::SS format.
 sub get_time_utc {
     my ($self, $epoch_secs) = @_;
 
+    $epoch_secs = time() unless defined $epoch_secs;
+
     my ($sec,$min,$hour,$mday,$mon,$year) = gmtime($epoch_secs);
     $year += 1900 if $year < 1900;
     $mon++;
 
-    my $ts = sprintf "%04d-%02d-%02dT%02d:%02d:%02d", $year, $mon,
+    my $ts = sprintf "%04d-%02d-%02d %02d:%02d:%02d", $year, $mon,
         $mday, $hour, $min, $sec;
 
     return $ts;
@@ -158,7 +166,7 @@ sub get_time_utc {
 
 =pod
 
-=head2 get_date_utc($epoch_secs)
+=head3 get_date_utc($epoch_secs)
 
 Return the UTC date for $epoch_secs in YYYY-dd-mm format.
 
@@ -166,6 +174,8 @@ Return the UTC date for $epoch_secs in YYYY-dd-mm format.
 
 sub get_date_utc {
     my ($self, $epoch_secs) = @_;
+
+    $epoch_secs = time() unless defined $epoch_secs;
 
     my ($sec,$min,$hour,$mday,$mon,$year) = gmtime($epoch_secs);
     $year += 1900 if $year < 1900;
@@ -175,6 +185,47 @@ sub get_date_utc {
 
     return $ts;
 }
+
+=pod
+
+=head2 Logging
+
+=head3 setup_logging($opts, $log_level_str)
+
+Set up logging with the log level set to
+C<$log_level_str>. C<$opts> is an options hash. If the key C<log>
+is present, its value is treated as a log file to write to,
+unless the value is C<*STDOUT> or C<*STDERR>, in which case those
+log lines will be written to those file handles.
+
+This method also sets up 8 functions in the caller's environment
+for logging:  C<out_log($fmt, @args)>, and
+C<out_log_$str($fmt, @args)>, where C<$str> is each of the log levels listed
+below. C<$fmt> is the same as for C<printf()>.
+
+Log levels are (in ascending order of criticality):
+
+=over
+
+=item * debug
+
+=item * info
+
+=item * notice
+
+=item * warn
+
+=item * err
+
+=item * crit
+
+=item * alert
+
+=item * emerg
+
+=back
+
+=cut
 
 sub setup_logging {
     my ($self, $opts, $log_level_str) = @_;
@@ -244,9 +295,37 @@ sub setup_logging {
         printf $log_fh "$ts $prog" . "[$$]: " . $fmt . "\n", @rest;
     };
 
+    my $out_log_debug = sub {
+        my ($fmt, @rest) = @_;
+        return $out_log->('debug', $fmt, @rest);
+    };
     my $out_log_info = sub {
         my ($fmt, @rest) = @_;
         return $out_log->('info', $fmt, @rest);
+    };
+    my $out_log_notice = sub {
+        my ($fmt, @rest) = @_;
+        return $out_log->('notice', $fmt, @rest);
+    };
+    my $out_log_warn = sub {
+        my ($fmt, @rest) = @_;
+        return $out_log->('warn', $fmt, @rest);
+    };
+    my $out_log_err = sub {
+        my ($fmt, @rest) = @_;
+        return $out_log->('err', $fmt, @rest);
+    };
+    my $out_log_crit = sub {
+        my ($fmt, @rest) = @_;
+        return $out_log->('crit', $fmt, @rest);
+    };
+    my $out_log_alert = sub {
+        my ($fmt, @rest) = @_;
+        return $out_log->('alert', $fmt, @rest);
+    };
+    my $out_log_emerg = sub {
+        my ($fmt, @rest) = @_;
+        return $out_log->('emerg', $fmt, @rest);
     };
 
     $self->{out_log} = $out_log;
@@ -254,6 +333,15 @@ sub setup_logging {
     no strict 'refs';
     # *{$caller . "::msg"} = $msg;
     *{$caller . "::out_log"} = $out_log_info;
+
+    *{$caller . "::out_log_debug"} = $out_log_debug;
+    *{$caller . "::out_log_info"} = $out_log_info;
+    *{$caller . "::out_log_notice"} = $out_log_notice;
+    *{$caller . "::out_log_warn"} = $out_log_warn;
+    *{$caller . "::out_log_err"} = $out_log_err;
+    *{$caller . "::out_log_crit"} = $out_log_crit;
+    *{$caller . "::out_log_alert"} = $out_log_alert;
+    *{$caller . "::out_log_emerg"} = $out_log_emerg;
 }
 
 sub log_debug {
@@ -304,6 +392,24 @@ sub log_emerg {
     return $self->{out_log}->('emerg', $fmt, @args);
 }
 
+=pod
+
+=head2 Configuration file parsing
+
+INI-style configuration parsing.
+
+=head3 my $data = setup_conf($type, $file)
+
+Reads the INI C<$file> provided (file path or file handle). Returns the
+data as a hash of all keys. Keys are prefixed by the section and a period ('.').
+The default section is C<global>.
+
+C<$type> is a namespace used to store your configuration in the Utils object.
+You can retrieve individual fields later using C<get_conf_val()> if you
+so choose.
+
+=cut
+
 sub setup_conf {
     my ($self, $type, $file) = @_;
 
@@ -314,12 +420,31 @@ sub setup_conf {
     return $data;
 }
 
+=pod
+
+=head3 C<get_conf_val($type, $field)>
+
+Retrieve the value association with the key C<$field> from the configuration
+set up with type C<$type>.
+
+=cut
+
 sub get_conf_val {
     my ($self, $type, $field) = @_;
     my $conf = $self->{"conf_data_$type"}        
         // return;
     return $conf->{$field};
 }
+
+=pod
+
+=head3
+
+Reads the INI C<$file> provided (file path or file handle). Returns the
+data as a hash of all keys. Keys are prefixed by the section and a period ('.').
+The default section is C<global>.
+
+=cut
 
 sub get_conf {
    my ($self, $file) = @_;
@@ -602,23 +727,24 @@ sub _get_options {
 }
 ########## end option processing ##########
 
+# =head1 EXAMPLES
+
+
+# =head1 DEPENDENCIES
+
 
 =pod
-
-=head1 EXAMPLES
-
-
-=head1 DEPENDENCIES
-
 
 =head1 AUTHOR
 
 Don Owens <don@regexguy.com>
 
-=head1 SEE ALSO
 
 
 =cut
+
+# =head1 SEE ALSO
+
 
 1;
 
