@@ -45,7 +45,7 @@ Owenslib::Prog::Utils - General programming utilities.
 
 =head1 VERSION
 
-1.02
+1.03
 
 =cut
 
@@ -185,6 +185,67 @@ sub get_date_utc {
 
     return $ts;
 }
+
+sub get_time_local_file {
+    my ($self, $epoch_secs) = @_;
+
+    $epoch_secs = time() unless defined $epoch_secs;
+
+    my ($sec,$min,$hour,$mday,$mon,$year) = localtime($epoch_secs);
+    $year += 1900 if $year < 1900;
+    $mon++;
+
+    my $ts = sprintf "%04d%02d%02d%02d%02d%02d", $year, $mon,
+        $mday, $hour, $min, $sec;
+
+    return $ts;
+}
+
+sub get_time_local_file_hour {
+    my ($self, $epoch_secs) = @_;
+
+    $epoch_secs = time() unless defined $epoch_secs;
+
+    my ($sec,$min,$hour,$mday,$mon,$year) = localtime($epoch_secs);
+    $year += 1900 if $year < 1900;
+    $mon++;
+
+    my $ts = sprintf "%04d%02d%02d%02d", $year, $mon,
+        $mday, $hour;
+
+    return $ts;
+}
+
+sub get_time_utc_file {
+    my ($self, $epoch_secs) = @_;
+
+    $epoch_secs = time() unless defined $epoch_secs;
+
+    my ($sec,$min,$hour,$mday,$mon,$year) = gmtime($epoch_secs);
+    $year += 1900 if $year < 1900;
+    $mon++;
+
+    my $ts = sprintf "%04d%02d%02d%02d%02d%02d", $year, $mon,
+        $mday, $hour, $min, $sec;
+
+    return $ts;
+}
+
+sub get_time_utc_file_hour {
+    my ($self, $epoch_secs) = @_;
+
+    $epoch_secs = time() unless defined $epoch_secs;
+
+    my ($sec,$min,$hour,$mday,$mon,$year) = gmtime($epoch_secs);
+    $year += 1900 if $year < 1900;
+    $mon++;
+
+    my $ts = sprintf "%04d%02d%02d%02d", $year, $mon,
+        $mday, $hour;
+
+    return $ts;
+}
+
 
 =pod
 
