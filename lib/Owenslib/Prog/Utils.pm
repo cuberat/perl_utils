@@ -1,4 +1,4 @@
-# Copyright (c) 2015-2017 Don Owens <don@regexguy.com>.  All rights reserved.
+# Copyright (c) 2015-2018 Don Owens <don@regexguy.com>.  All rights reserved.
 #
 # This software is released under the BSD license:
 #
@@ -45,7 +45,7 @@ Owenslib::Prog::Utils - General programming utilities.
 
 =head1 VERSION
 
-1.03
+1.04
 
 =cut
 
@@ -787,6 +787,120 @@ sub _get_options {
     return $opt_rv ? \%opts : undef;
 }
 ########## end option processing ##########
+
+=pod
+
+=head2 File I/O
+
+=head3 open_file_w($path)
+
+Open the file in read-only mode. Compresses gzip, bzip2, and xz
+files based on the filename extention if the corresponding
+executables are available.
+
+=cut
+
+sub open_file_w {
+    my ($self, $path) = @_;
+
+    my @comp;
+    if ($path =~ /\.bz2$/) {
+        @comp = ($self->get_bzip, '-9', '-c');
+    } elsif ($path =~ /\.gz$/) {
+        @comp = ($self->get_gzip, '-9', '-c');
+    } elsif ($path =~ /\.xz$/) {
+        @comp = ($self->get_xz, '-c');
+    }
+
+    open(my $out_fh, '>', $path) or return undef;
+
+    unless (@comp) {
+        return $out_fh;
+    }
+
+    my $pid = open(my $to_kid_fh, '|-');
+    return undef unless defined $pid;
+
+    if ($pid > 0) {
+        # parent
+        return $to_kid_fh;
+    }
+
+    # child - change STDOUT to point to $out_fh
+    open(STDOUT, '>&', $out_fh) or die "can't dup \$out_fh";
+
+    exec {$comp[0]} @comp;
+    die "not supposed to be here";
+}
+
+=pod
+
+=head3 open_file_ro($path)
+
+Open the file in read-only mode. Decompresses gzip, bzip2, and xz
+files based on the filename extention if the corresponding
+executables are available.
+
+=cut
+
+sub open_file_ro {
+    my ($self, $path) = @_;
+
+    my @comp;
+    if ($path =~ /\.bz2$/) {
+        @comp = ($self->get_bzip, '-d', '-c');
+    } elsif ($path =~ /\.gz$/) {
+        @comp = ($self->get_gzip, '-d', '-c');
+    } elsif ($path =~ /\.xz$/) {
+        @comp = ($self->get_xz, '-d', '-c');
+    }
+
+    unless (@comp) {
+        open(my $in_fh, '<', $path) or return undef;
+        return $in_fh;
+    }
+
+    open(my $in_fh, '-|', @comp, $path) or return undef;
+    return $in_fh;
+}
+    
+
+sub get_gzip {
+    my ($self) = @_;
+
+    return $self->find_exec('gzip', 'gzip_exec');
+}
+
+sub get_bzip {
+    my ($self) = @_;
+
+    return $self->find_exec('bzip2', 'bzip2_exec');
+}
+
+sub get_xz {
+    my ($self) = @_;
+
+    return $self->find_exec('xz', 'xz_exec');
+}
+
+sub find_exec {
+    my ($self, $exec_name, $cache_name) = @_;
+
+    my $prog = $self->{$cache_name};
+    return $prog if defined $prog;
+
+    for my $dir ("/usr/bin", "/usr/local/bin", "/bin") {
+        my $path = $dir . '/' . $exec_name;
+        if (-x $path) {
+            $self->{$cache_name} = $path;
+            return $path;
+        }
+    }
+
+    return undef;
+
+}
+
 
 # =head1 EXAMPLES
 
