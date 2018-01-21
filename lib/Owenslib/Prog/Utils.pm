@@ -35,7 +35,7 @@
 
 =head1 NAME
 
-Owenslib::Prog::Utils - General programming utilities.
+Owenslib::Prog::Utils - General programming utilities for Perl.
 
 =head1 SYNOPSIS
 

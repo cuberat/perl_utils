@@ -1,5 +1,5 @@
 ---
-abstract: 'General programming utilities.'
+abstract: 'General programming utilities for Perl.'
 author:
   - 'Don Owens <don@regexguy.com>'
 build_requires:
