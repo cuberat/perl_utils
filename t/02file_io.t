@@ -60,7 +60,7 @@ sub test_compress {
         my $temp_file = $temp_fh->filename;
 
         my $compress_file = $temp_file;
-        diag("compressed file is $compress_file");
+        # diag("compressed file is $compress_file");
         my $out_fh = $utils->open_file_w($compress_file);
 
         ok($out_fh, 'open file for compression');
