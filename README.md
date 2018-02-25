@@ -68,6 +68,10 @@ Log levels are (in ascending order of criticality):
 - alert
 - emerg
 
+There is also `out_log_err_ret($rv, $fmt, @rest)` that will
+return $rv when done. This is useful for returning from a
+function with an error value without using an extra line of code.
+
 ## Configuration file parsing
 
 INI-style configuration parsing.
