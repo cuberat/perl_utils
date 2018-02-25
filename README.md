@@ -8,7 +8,7 @@ Owenslib::Prog::Utils - General programming utilities for Perl.
 
 # VERSION
 
-1.04
+1.05
 
 # METHODS
 
@@ -110,6 +110,30 @@ executables are available.
 Open the file in read-only mode. Decompresses gzip, bzip2, and xz
 files based on the filename extention if the corresponding
 executables are available.
+
+### get\_gzip()
+
+Look for the gzip executable in the standard places and return the path.
+
+### get\_bzip2()
+
+Look for the bzip2 executable in the standard places and return the path.
+
+### get\_xz()
+
+Look for the xz executable in the standard places and return the path.
+
+### get\_ssh()
+
+Look for the ssh executable in the standard places and return the path.
+
+### get\_rsync()
+
+Look for the rsync executable in the standard places and return the path.
+
+### get\_mv()
+
+Look for the mv executable in the standard places and return the path.
 
 # AUTHOR
 
