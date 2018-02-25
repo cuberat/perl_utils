@@ -45,7 +45,7 @@ Owenslib::Prog::Utils - General programming utilities for Perl.
 
 =head1 VERSION
 
-1.04
+1.05
 
 =cut
 
@@ -56,7 +56,7 @@ package Owenslib::Prog::Utils;
 
 use Getopt::Long qw(:config no_ignore_case bundling);
 
-our $VERSION = '1.02';
+our $VERSION = '1.05';
 
 
 =pod
@@ -286,6 +286,10 @@ Log levels are (in ascending order of criticality):
 
 =back
 
+There is also C<out_log_err_ret($rv, $fmt, @rest)> that will
+return $rv when done. This is useful for returning from a
+function with an error value without using an extra line of code.
+
 =cut
 
 sub setup_logging {
@@ -376,6 +380,11 @@ sub setup_logging {
         my ($fmt, @rest) = @_;
         return $out_log->('err', $fmt, @rest);
     };
+    my $out_log_err_ret = sub {
+        my ($rv, $fmt, @rest) = @_;
+        $out_log->('err', $fmt, @rest);
+        return $rv;
+    };
     my $out_log_crit = sub {
         my ($fmt, @rest) = @_;
         return $out_log->('crit', $fmt, @rest);
@@ -400,6 +409,7 @@ sub setup_logging {
     *{$caller . "::out_log_notice"} = $out_log_notice;
     *{$caller . "::out_log_warn"} = $out_log_warn;
     *{$caller . "::out_log_err"} = $out_log_err;
+    *{$caller . "::out_log_err_ret"} = $out_log_err_ret;
     *{$caller . "::out_log_crit"} = $out_log_crit;
     *{$caller . "::out_log_alert"} = $out_log_alert;
     *{$caller . "::out_log_emerg"} = $out_log_emerg;
@@ -863,7 +873,14 @@ sub open_file_ro {
     open(my $in_fh, '-|', @comp, $path) or return undef;
     return $in_fh;
 }
-    
+
+=pod
+
+=head3 get_gzip()
+
+Look for the gzip executable in the standard places and return the path.
+
+=cut
 
 sub get_gzip {
     my ($self) = @_;
@@ -871,16 +888,80 @@ sub get_gzip {
     return $self->find_exec('gzip', 'gzip_exec');
 }
 
+=pod
+
+=head3 get_bzip2()
+
+Look for the bzip2 executable in the standard places and return the path.
+
+=cut
+
 sub get_bzip {
     my ($self) = @_;
 
     return $self->find_exec('bzip2', 'bzip2_exec');
 }
 
+sub get_bzip2 {
+    my ($self) = @_;
+
+    return $self->find_exec('bzip2', 'bzip2_exec');
+}
+
+=pod
+
+=head3 get_xz()
+
+Look for the xz executable in the standard places and return the path.
+
+=cut
+
 sub get_xz {
     my ($self) = @_;
 
     return $self->find_exec('xz', 'xz_exec');
+}
+
+=pod
+
+=head3 get_ssh()
+
+Look for the ssh executable in the standard places and return the path.
+
+=cut
+
+sub get_ssh {
+    my ($self) = @_;
+
+    return $self->find_exec('ssh', 'ssh_exec');
+}
+
+=pod
+
+=head3 get_rsync()
+
+Look for the rsync executable in the standard places and return the path.
+
+=cut
+
+sub get_rsync {
+    my ($self) = @_;
+
+    return $self->find_exec('rsync', 'rsync_exec');
+}
+
+=pod
+
+=head3 get_mv()
+
+Look for the mv executable in the standard places and return the path.
+
+=cut
+
+sub get_mv {
+    my ($self) = @_;
+
+    return $self->find_exec('mv', 'mv_exec');
 }
 
 sub find_exec {
