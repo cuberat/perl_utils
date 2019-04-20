@@ -1,4 +1,4 @@
-# Copyright (c) 2015-2018 Don Owens <don@regexguy.com>.  All rights reserved.
+# Copyright (c) 2015-2019 Don Owens <don@regexguy.com>.  All rights reserved.
 #
 # This software is released under the BSD license:
 #
@@ -56,7 +56,7 @@ package Owenslib::Prog::Utils;
 
 use Getopt::Long qw(:config no_ignore_case bundling);
 
-our $VERSION = '1.05';
+our $VERSION = '1.06';
 
 
 =pod
@@ -262,7 +262,8 @@ log lines will be written to those file handles.
 This method also sets up 8 functions in the caller's environment
 for logging:  C<out_log($fmt, @args)>, and
 C<out_log_$str($fmt, @args)>, where C<$str> is each of the log levels listed
-below. C<$fmt> is the same as for C<printf()>.
+below. C<$fmt> is the same as for C<printf()>. C<out_log_tee($fmt, @ARGS)>
+logs to the configured log plus standard error.
 
 Log levels are (in ascending order of criticality):
 
@@ -336,6 +337,7 @@ sub setup_logging {
                 or die "couldn't open log file '$opts->{log}' for output";
         }
         select((select($log_fh), $| = 1)[0]);
+        binmode($log_fh, ':utf8');
 
         $self->{log_fh} = $log_fh;
     }
@@ -357,7 +359,9 @@ sub setup_logging {
         my $ts = sprintf "%04d%02d%02d%02d%02d%02d", $year, $mon,
             $mday, $hour, $min, $sec;
 
-        printf $log_fh "$ts $prog" . "[$$]: " . $fmt . "\n", @rest;
+        my $msg = "$ts $prog" . "[$$]: " . sprintf ($fmt . "\n", @rest);
+        print $log_fh $msg;
+        return $msg;
     };
 
     my $out_log_debug = sub {
@@ -397,12 +401,21 @@ sub setup_logging {
         my ($fmt, @rest) = @_;
         return $out_log->('emerg', $fmt, @rest);
     };
+    my $out_log_tee = sub {
+        my ($fmt, @rest) = @_;
+
+        my $msg = $out_log_info->($fmt, @rest);
+        print STDERR $msg;
+
+        return $msg;
+    };
 
     $self->{out_log} = $out_log;
 
     no strict 'refs';
     # *{$caller . "::msg"} = $msg;
     *{$caller . "::out_log"} = $out_log_info;
+    *{$caller . "::out_log_tee"} = $out_log_tee;
 
     *{$caller . "::out_log_debug"} = $out_log_debug;
     *{$caller . "::out_log_info"} = $out_log_info;
