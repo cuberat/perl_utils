@@ -305,7 +305,39 @@ sub get_filename_line_num() {
 
 =head3 config_log($opts, $log_level_str)
 
-Like C<setup_logging()>, but with different default options.
+Like C<setup_logging()>, but with different default behaviors.
+
+If no options are passed to countermand the defaults, the following options are
+assumed to be set to true:
+
+=over
+
+=item * C<log_no_prog>
+
+=item * C<log_no_pid>
+
+=item * C<log_norm_ts>
+
+=item * C<log_src>
+
+=back
+
+The following additional options are supported to countermand the above
+defaults:
+
+=over
+
+=item * C<log_prog>
+
+=item * C<log_pid>
+
+=item * C<log_short_ts>
+
+=item * C<log_no_src>
+
+=back
+
+Other options provided act as they do when passed to C<setup_logging()>.
 
 =cut
 
@@ -374,6 +406,26 @@ There is also C<out_log_err_ret($rv, $fmt, @rest)> that will
 return $rv when done. This is useful for returning from a
 function with an error value without using an extra line of code.
 
+=head4 Options
+
+The following options in $opts change the logging behavior:
+
+=over
+
+=item * C<log_src>: Add the source file name to each log line.
+
+=item * C<log_norm_ts>: Use a more normal logging timestamp instead of stripping all delimiters.
+
+=item * C<log_micro_ts>: Include microseconds in the timestamp.
+
+=item * C<log_no_pid>: Don't including the process ID in the log line.
+
+=item * C<log_no_prog>: Don't include the program name in the log line.
+
+=item * C<log_utc_ts>: Log timestamps in UTC.
+
+=back
+
 =cut
 
 sub setup_logging {
@@ -391,7 +443,7 @@ sub setup_logging {
         last unless $caller eq __PACKAGE__;
     }
 
-    my $quiet = $opts->{quiet};
+    # my $quiet = $opts->{quiet};
     my $log_src = $opts->{log_src};
     my $log_norm_ts = $opts->{log_norm_ts};
     my $log_ms = $opts->{log_micro_ts};
