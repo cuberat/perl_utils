@@ -8,7 +8,7 @@ Owenslib::Prog::Utils - General programming utilities for Perl.
 
 # VERSION
 
-1.05
+1.07
 
 # METHODS
 
@@ -42,7 +42,39 @@ Return the UTC timestamp for $epoch\_secs in YYYY-dd-mmTHH:MM::SS format.
 
 Return the UTC date for $epoch\_secs in YYYY-dd-mm format.
 
+### ($file\_path, line\_num) = get\_file\_line\_num()
+
+Return the path to the file and the line number where this method is called
+(useful for logging).
+
+### ($filename, line\_num) = get\_filename\_line\_num()
+
+Return the name of the file (without the directory part) and the line number
+where this method is called (useful for logging).
+
 ## Logging
+
+### config\_log($opts, $log\_level\_str)
+
+Like `setup_logging()`, but with different default behaviors.
+
+If no options are passed to countermand the defaults, the following options are
+assumed to be set to true:
+
+- `log_no_prog`
+- `log_no_pid`
+- `log_norm_ts`
+- `log_src`
+
+The following additional options are supported to countermand the above
+defaults:
+
+- `log_prog`
+- `log_pid`
+- `log_short_ts`
+- `log_no_src`
+
+Other options provided act as they do when passed to `setup_logging()`.
 
 ### setup\_logging($opts, $log\_level\_str)
 
@@ -55,7 +87,8 @@ log lines will be written to those file handles.
 This method also sets up 8 functions in the caller's environment
 for logging:  `out_log($fmt, @args)`, and
 `out_log_$str($fmt, @args)`, where `$str` is each of the log levels listed
-below. `$fmt` is the same as for `printf()`.
+below. `$fmt` is the same as for `printf()`. `out_log_tee($fmt, @ARGS)`
+logs to the configured log plus standard error.
 
 Log levels are (in ascending order of criticality):
 
@@ -71,6 +104,17 @@ Log levels are (in ascending order of criticality):
 There is also `out_log_err_ret($rv, $fmt, @rest)` that will
 return $rv when done. This is useful for returning from a
 function with an error value without using an extra line of code.
+
+#### Options
+
+The following options in $opts change the logging behavior:
+
+- `log_src`: Add the source file name to each log line.
+- `log_norm_ts`: Use a more normal logging timestamp instead of stripping all delimiters.
+- `log_micro_ts`: Include microseconds in the timestamp.
+- `log_no_pid`: Don't including the process ID in the log line.
+- `log_no_prog`: Don't include the program name in the log line.
+- `log_utc_ts`: Log timestamps in UTC.
 
 ## Configuration file parsing
 
