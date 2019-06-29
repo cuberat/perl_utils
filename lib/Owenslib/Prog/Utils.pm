@@ -45,18 +45,20 @@ Owenslib::Prog::Utils - General programming utilities for Perl.
 
 =head1 VERSION
 
-1.05
+1.07
 
 =cut
 
 use strict;
 use warnings;
 
+use Time::HiRes ();
+
 package Owenslib::Prog::Utils;
 
 use Getopt::Long qw(:config no_ignore_case bundling);
 
-our $VERSION = '1.06';
+our $VERSION = '1.07';
 
 
 =pod
@@ -246,10 +248,91 @@ sub get_time_utc_file_hour {
     return $ts;
 }
 
+=pod
+
+=head3 ($file_path, line_num) = get_file_line_num()
+
+Return the path to the file and the line number where this method is called
+(useful for logging).
+
+=cut
+
+sub get_file_line_num() {
+    my  $i = 0;
+    while (1) {
+        my ($package, $file_path, $line) = caller($i);
+        return unless defined $package;
+        $i++;
+
+        next if $package eq __PACKAGE__;
+
+        return ($file_path, $line)
+    }
+
+    return
+}
+
+=pod
+
+=head3 ($filename, line_num) = get_filename_line_num()
+
+Return the name of the file (without the directory part) and the line number
+where this method is called (useful for logging).
+
+=cut
+
+sub get_filename_line_num() {
+    my  $i = 0;
+    while (1) {
+        my ($package, $file_path, $line) = caller($i);
+        return unless defined $package;
+        $i++;
+
+        next if $package eq __PACKAGE__;
+
+        (my $filename = $file_path) =~ s{^.*/([^/]+)$}{$1};
+
+        return ($filename, $line)
+    }
+
+    return
+}
+
 
 =pod
 
 =head2 Logging
+
+=head3 config_log($opts, $log_level_str)
+
+Like C<setup_logging()>, but with different default options.
+
+=cut
+
+sub config_log {
+    my ($self, $opts_in, $log_level_str) = @_;
+    $opts_in //= { };
+
+    my $opts = { };
+    %$opts = %$opts_in;
+
+    unless ($opts_in->{log_prog}) {
+        $opts->{log_no_prog} = 1;
+    }
+    unless ($opts_in->{log_pid}) {
+        $opts->{log_no_pid} = 1;
+    }
+    unless ($opts_in->{log_short_ts}) {
+        $opts->{log_norm_ts} = 1;
+    }
+    unless ($opts_in->{log_no_src}) {
+        $opts->{log_src} = 1;
+    }
+
+    return $self->setup_logging($opts, $log_level_str);
+}
+
+=pod
 
 =head3 setup_logging($opts, $log_level_str)
 
@@ -297,10 +380,23 @@ sub setup_logging {
     my ($self, $opts, $log_level_str) = @_;
 
     $log_level_str = 'info' unless defined $log_level_str;
+    $opts //= { };
 
-    my $caller = caller();
+    my $caller_cnt = 0;
+    my $caller;
+    while (1) {
+        $caller = caller($caller_cnt);
+        $caller_cnt++;
+        last unless defined $caller;
+        last unless $caller eq __PACKAGE__;
+    }
 
     my $quiet = $opts->{quiet};
+    my $log_src = $opts->{log_src};
+    my $log_norm_ts = $opts->{log_norm_ts};
+    my $log_ms = $opts->{log_micro_ts};
+    my $log_no_pid = $opts->{log_no_pid};
+    my $log_no_prog = $opts->{log_no_prog};
     (my $prog = $0) =~ s{^.*/([^/]+)$}{$1};
 
     $self->{log_level_map} = { emerg => 10,
@@ -326,15 +422,20 @@ sub setup_logging {
     }
 
     if ($opts->{log}) {
-        if ($opts->{log} eq '*STDERR') {
-            $log_fh = *STDERR;
-        }
-        elsif ($opts->{log} eq '*STDOUT') {
-            $log_fh = *STDOUT;
-        }
-        else {
-            open($log_fh, '>>', $opts->{log})
-                or die "couldn't open log file '$opts->{log}' for output";
+        my $log_ref = ref($opts->{log});
+        if (defined $log_ref and $log_ref eq "GLOB") {
+            $log_fh = $opts->{log};
+        } else {
+            if ($opts->{log} eq '*STDERR') {
+                $log_fh = *STDERR;
+            }
+            elsif ($opts->{log} eq '*STDOUT') {
+                $log_fh = *STDOUT;
+            }
+            else {
+                open($log_fh, '>>', $opts->{log})
+                    or die "couldn't open log file '$opts->{log}' for output";
+            }
         }
         select((select($log_fh), $| = 1)[0]);
         binmode($log_fh, ':utf8');
@@ -350,16 +451,42 @@ sub setup_logging {
             return 0;
         }
 
-        my ($sec,$min,$hour,$mday,$mon,$year) = localtime();
+        my ($now_secs, $now_msecs) = Time::HiRes::gettimeofday();
+        my ($sec,$min,$hour,$mday,$mon,$year) = localtime($now_secs);
         $year += 1900 if $year < 1900;
         $mon++;
 
         # my $ts = sprintf "%04d-%02d-%02dT%02d:%02d:%02d", $year, $mon,
         #     $mday, $hour, $min, $sec;
-        my $ts = sprintf "%04d%02d%02d%02d%02d%02d", $year, $mon,
-            $mday, $hour, $min, $sec;
+        my $ts;
 
-        my $msg = "$ts $prog" . "[$$]: " . sprintf ($fmt . "\n", @rest);
+        if ($log_norm_ts) {
+            $ts = sprintf "%04d-%02d-%02d %02d:%02d:%02d", $year, $mon,
+                $mday, $hour, $min, $sec;
+        } else {
+            $ts = sprintf "%04d%02d%02d%02d%02d%02d", $year, $mon,
+                $mday, $hour, $min, $sec;
+        }
+
+        if ($log_ms) {
+            $ts .= sprintf ".%06d", $now_msecs;
+        }
+
+        my $src;
+        if ($log_src) {
+            my ($filename, $line_no) = $self->get_filename_line_num;
+            $src = sprintf(" [%s:%s]", $filename, $line_no);
+        } else {
+            $src = "";
+        }
+
+        my $pid_str = $log_no_pid ? "": "[$$]";
+        my $lprog = $log_no_prog ? "" : " " . $prog;
+
+        my $msg = sprintf "%s%s%s%s: %s\n", $ts, $lprog, $src, $pid_str,
+            sprintf ($fmt, @rest);
+
+        # my $msg = "$ts $prog$src" . $pid_str . ": " . sprintf ($fmt . "\n", @rest);
         print $log_fh $msg;
         return $msg;
     };
@@ -426,6 +553,8 @@ sub setup_logging {
     *{$caller . "::out_log_crit"} = $out_log_crit;
     *{$caller . "::out_log_alert"} = $out_log_alert;
     *{$caller . "::out_log_emerg"} = $out_log_emerg;
+
+    return 1;
 }
 
 sub log_debug {
@@ -515,7 +644,7 @@ set up with type C<$type>.
 
 sub get_conf_val {
     my ($self, $type, $field) = @_;
-    my $conf = $self->{"conf_data_$type"}        
+    my $conf = $self->{"conf_data_$type"}
         // return;
     return $conf->{$field};
 }
@@ -994,6 +1123,7 @@ sub find_exec {
     return undef;
 
 }
+
 
 
 # =head1 EXAMPLES
