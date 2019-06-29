@@ -397,6 +397,8 @@ sub setup_logging {
     my $log_ms = $opts->{log_micro_ts};
     my $log_no_pid = $opts->{log_no_pid};
     my $log_no_prog = $opts->{log_no_prog};
+    my $log_utc_ts = $opts->{log_utc_ts};
+
     (my $prog = $0) =~ s{^.*/([^/]+)$}{$1};
 
     $self->{log_level_map} = { emerg => 10,
@@ -452,7 +454,12 @@ sub setup_logging {
         }
 
         my ($now_secs, $now_msecs) = Time::HiRes::gettimeofday();
-        my ($sec,$min,$hour,$mday,$mon,$year) = localtime($now_secs);
+        my ($sec,$min,$hour,$mday,$mon,$year);
+        if ($log_utc_ts) {
+            ($sec,$min,$hour,$mday,$mon,$year) = gmtime($now_secs);
+        } else {
+            ($sec,$min,$hour,$mday,$mon,$year) = localtime($now_secs);
+        }
         $year += 1900 if $year < 1900;
         $mon++;
 
