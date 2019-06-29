@@ -16,7 +16,7 @@ sub out_log;
     my $log_out_str = "";
     open(my $log_fh, ">", \$log_out_str);
 
-    $utils->config_log({ log => $log_fh });
+    $utils->config_log({ log => $log_fh, log_utc_ts => 1 });
 
     out_log "testing %s", "foo";
 
